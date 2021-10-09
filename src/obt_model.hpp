@@ -20,7 +20,12 @@ class ObtModel {
 			static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
 		};
 
-		ObtModel(ObtDevice& obtDevice, const std::vector<Vertex>& vertices);
+		struct Builder {
+			std::vector<Vertex> vertices{};
+			std::vector<uint32_t> indices{};
+		};
+
+		ObtModel(ObtDevice& obtDevice, const ObtModel::Builder& builder);
 		~ObtModel();
 
 		ObtModel(const ObtModel&) = delete;
@@ -31,11 +36,18 @@ class ObtModel {
 
 	private:
 		void createVertexBuffers(const std::vector<Vertex>& vertices);
+		void createIndexBuffers(const std::vector<uint32_t>& indices);
 
 		ObtDevice& obtDevice;
+
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
 		uint32_t vertexCount;
+
+		bool hasIndexBuffer = false;
+		VkBuffer indexBuffer;
+		VkDeviceMemory indexBufferMemory;
+		uint32_t indexCount;
 };
 
 }
