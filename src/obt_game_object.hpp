@@ -2,23 +2,52 @@
 
 #include "obt_model.hpp"
 
+#define GLM_FORCE_RADIANS
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
+
 #include <memory>
 
 namespace obt {
 
-struct Transform2dComponent {
-	glm::vec2 translation{};
-	glm::vec2 scale{1.f, 1.f};
-	float rotation;
+struct TransformComponent {
+	glm::vec3 translation{};
+	glm::vec3 scale{1.f, 1.f, 1.f};
+	glm::quat rotation{};
 
-	glm::mat2 mat2() {
-		const float s = glm::sin(rotation);
-		const float c = glm::cos(rotation);
+	void setEuler(glm::vec3 angles) {
+		rotation *= glm::quat_cast(glm::orientate3(glm::vec3{angles.z, angles.x, angles.y}));
+	}
 
-		glm::mat2 rotMat{{c, s}, {-s, c}};
+	void rotateGlobalX(float angle) { rotation = glm::normalize(glm::angleAxis(angle, glm::vec3{1.f, 0.f, 0.f})*rotation); }
+	void rotateGlobalY(float angle) { rotation = glm::normalize(glm::angleAxis(angle, glm::vec3{0.f, -1.f, 0.f})*rotation); }
+	void rotateGlobalZ(float angle) { rotation = glm::normalize(glm::angleAxis(angle, glm::vec3{0.f, 0.f, 1.f})*rotation); }
 
-		glm::mat2 scaleMat{{scale.x, 0.f}, {0.f, scale.y}};
-		return rotMat*scaleMat;
+	void rotateLocalX(float angle) { rotation = glm::normalize(rotation*glm::angleAxis(angle, glm::vec3{1.f, 0.f, 0.f})); }
+	void rotateLocalY(float angle) { rotation = glm::normalize(rotation*glm::angleAxis(angle, glm::vec3{0.f, -1.f, 0.f})); }
+	void rotateLocalZ(float angle) { rotation = glm::normalize(rotation*glm::angleAxis(angle, glm::vec3{0.f, 0.f, 1.f})); }
+
+	void eulerRotateGlobal(glm::vec3 angles) {
+		glm::quat quatX = glm::angleAxis(angles.x, glm::vec3{1.f, 0.f, 0.f});
+		glm::quat quatY = glm::angleAxis(angles.y, glm::vec3{0.f, -1.f, 0.f});
+		glm::quat quatZ = glm::angleAxis(angles.z, glm::vec3{0.f, 0.f, 1.f});
+		rotation = glm::normalize(quatX*quatY*quatZ*rotation);
+	}
+
+	void eulerRotateLocal(glm::vec3 angles) {
+		glm::quat quatX = glm::angleAxis(angles.x, glm::vec3{1.f, 0.f, 0.f});
+		glm::quat quatY = glm::angleAxis(angles.y, glm::vec3{0.f, -1.f, 0.f});
+		glm::quat quatZ = glm::angleAxis(angles.z, glm::vec3{0.f, 0.f, 1.f});
+		rotation = glm::normalize(rotation*quatX*quatY*quatZ);
+	}
+
+	float yaw() { return glm::yaw(glm::normalize(rotation)); }
+	float pitch() { return glm::pitch(glm::normalize(rotation)); }
+	float roll() { return glm::roll(glm::normalize(rotation)); }
+
+	glm::mat4 mat4() {
+		return glm::translate(glm::mat4{1.f}, translation) * glm::mat4_cast(rotation) * glm::scale(glm::mat4{1.f}, scale);
 	}
 };
 
@@ -36,11 +65,11 @@ class ObtGameObject {
 		ObtGameObject(ObtGameObject&&) = default;
 		ObtGameObject &operator=(ObtGameObject&&) = default;
 
-		const id_t getId() const { return id; }
+		id_t getId() const { return id; }
 
 		std::shared_ptr<ObtModel> model{};
 		glm::vec3 color{};
-		Transform2dComponent transform2d;
+		TransformComponent transform{};
 
 	private:
 		ObtGameObject(id_t objId) : id{objId} {}

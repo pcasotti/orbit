@@ -1,6 +1,8 @@
 #include "app.hpp"
 
 #include "simple_render_system.hpp"
+#include "obt_camera.hpp"
+#include "keyboard_controller.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -9,6 +11,7 @@
 
 #include <stdexcept>
 #include <array>
+#include <chrono>
 
 namespace obt {
 
@@ -20,13 +23,29 @@ App::~App() {}
 
 void App::run() {
 	SimpleRenderSystem simpleRenderSystem{obtDevice, obtRenderer.getSwapChainRenderPass()};
+	ObtCamera camera{};
+	camera.setViewTarget(glm::vec3{-1.f, -2.f, -2.f}, glm::vec3{0.f, 0.f, 2.5f});
 
+	auto viewerObject = ObtGameObject::createGameObject();
+	KeyboardController cameraController{};
+
+	auto currentTime = std::chrono::high_resolution_clock::now();
 	while(!obtWindow.shouldClose()) {
 		glfwPollEvents();
 
+		auto newTime = std::chrono::high_resolution_clock::now();
+		float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime-currentTime).count();
+		currentTime = newTime;
+
+		cameraController.moveXZ(obtWindow.getGLFWwindow(), viewerObject, frameTime);
+		camera.setViewQuat(viewerObject.transform.translation, viewerObject.transform.rotation);
+
+		float aspect = obtRenderer.getAspectRation();
+		camera.setPerspectiveProjection(glm::radians(60.f), aspect, .1f, 100.f);
+
 		if (auto commandBuffer = obtRenderer.beginFrame()) {
 			obtRenderer.beginSwapChainRenderPass(commandBuffer);
-			simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects);
+			simpleRenderSystem.renderGameObjects(commandBuffer, gameObjects, camera);
 			obtRenderer.endSwapChainRenderPass(commandBuffer);
 			obtRenderer.endFrame();
 		}
@@ -35,22 +54,70 @@ void App::run() {
 	vkDeviceWaitIdle(obtDevice.device());
 }
 
-void App::loadGameObjects() {
-	std::vector<ObtModel::Vertex> vertices {
-		{{.0f, -.5f}, {1.f, 0.f, 0.f}},
-		{{.5f, .5f}, {0.f, 1.f, 0.f}},
-		{{-.5f, .5f}, {0.f, 0.f, 1.f}},
+std::unique_ptr<ObtModel> createCubeModel(ObtDevice& device, glm::vec3 offset) {
+	std::vector<ObtModel::Vertex> vertices{
+		// left face (white)
+		{{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+		{{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+		{{-.5f, -.5f, .5f}, {.9f, .9f, .9f}},
+		{{-.5f, -.5f, -.5f}, {.9f, .9f, .9f}},
+		{{-.5f, .5f, -.5f}, {.9f, .9f, .9f}},
+		{{-.5f, .5f, .5f}, {.9f, .9f, .9f}},
+
+		// right face (yellow)
+		{{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+		{{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+		{{.5f, -.5f, .5f}, {.8f, .8f, .1f}},
+		{{.5f, -.5f, -.5f}, {.8f, .8f, .1f}},
+		{{.5f, .5f, -.5f}, {.8f, .8f, .1f}},
+		{{.5f, .5f, .5f}, {.8f, .8f, .1f}},
+
+		// top face (orange, remember y axis points down)
+		{{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+		{{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+		{{-.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+		{{-.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+		{{.5f, -.5f, -.5f}, {.9f, .6f, .1f}},
+		{{.5f, -.5f, .5f}, {.9f, .6f, .1f}},
+
+		// bottom face (red)
+		{{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+		{{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+		{{-.5f, .5f, .5f}, {.8f, .1f, .1f}},
+		{{-.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+		{{.5f, .5f, -.5f}, {.8f, .1f, .1f}},
+		{{.5f, .5f, .5f}, {.8f, .1f, .1f}},
+
+		// nose face (blue)
+		{{-.5f, -.5f, .5f}, {.1f, .1f, .8f}},
+		{{.5f, .5f, .5f}, {.1f, .1f, .8f}},
+		{{-.5f, .5f, .5f}, {.1f, .1f, .8f}},
+		{{-.5f, -.5f, .5f}, {.1f, .1f, .8f}},
+		{{.5f, -.5f, .5f}, {.1f, .1f, .8f}},
+		{{.5f, .5f, .5f}, {.1f, .1f, .8f}},
+
+		// tail face (green)
+		{{-.5f, -.5f, -.5f}, {.1f, .8f, .1f}},
+		{{.5f, .5f, -.5f}, {.1f, .8f, .1f}},
+		{{-.5f, .5f, -.5f}, {.1f, .8f, .1f}},
+		{{-.5f, -.5f, -.5f}, {.1f, .8f, .1f}},
+		{{.5f, -.5f, -.5f}, {.1f, .8f, .1f}},
+		{{.5f, .5f, -.5f}, {.1f, .8f, .1f}},
 	};
-	auto obtModel = std::make_shared<ObtModel>(obtDevice, vertices);
+	for (auto& v : vertices) {
+		v.position += offset;
+	}
+	return std::make_unique<ObtModel>(device, vertices);
+}
 
-	auto triangle = ObtGameObject::createGameObject();
-	triangle.model = obtModel;
-	triangle.color = {.1f, .8f, .1f};
-	triangle.transform2d.translation.x = .2;
-	triangle.transform2d.scale = {2.f, .5f};
-	triangle.transform2d.rotation = glm::half_pi<float>();
+void App::loadGameObjects() {
+	std::shared_ptr<ObtModel> obtModel = createCubeModel(obtDevice, {0.1f, 0.f, 0.f});
 
-	gameObjects.push_back(std::move(triangle));
+	auto cube = ObtGameObject::createGameObject();
+	cube.model = obtModel;
+	cube.transform.translation = {0.f, 0.f, 2.5f};
+	cube.transform.scale = {.5f, .5f, .5f};
+	gameObjects.push_back(std::move(cube));
 }
 
 }

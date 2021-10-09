@@ -20,6 +20,7 @@ class ObtRenderer {
 		ObtRenderer &operator=(const ObtRenderer&) = delete;
 
 		VkRenderPass getSwapChainRenderPass() const { return obtSwapChain->getRenderPass(); }
+		float getAspectRation() const { return obtSwapChain->extentAspectRatio(); }
 		bool isFrameInProgress() const { return isFrameStarted; }
 
 		VkCommandBuffer getCurrentCommandBuffer() const {
