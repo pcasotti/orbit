@@ -60,7 +60,7 @@ void App::loadGameObjects() {
 	auto gameObject = ObtGameObject::createGameObject();
 	gameObject.model = obtModel;
 	gameObject.transform.translation = {0.f, 0.f, 2.5f};
-	gameObject.transform.scale = glm::vec3{2.f};
+	gameObject.transform.scale = glm::vec3{2.f, .5f, 2.f};
 	gameObjects.push_back(std::move(gameObject));
 }
 

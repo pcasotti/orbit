@@ -12,7 +12,7 @@ namespace obt {
 
 struct PushConstantData {
 	glm::mat4 transform{1.f};
-	alignas(16) glm::vec3 color;
+	glm::mat4 normalMatrix{1.f};
 };
 
 SimpleRenderSystem::SimpleRenderSystem(ObtDevice& device, VkRenderPass renderPass) : obtDevice{device} {
@@ -59,8 +59,8 @@ void SimpleRenderSystem::renderGameObjects(VkCommandBuffer commandBuffer, std::v
 
 	for (auto& obj : gameObjects) {
 		PushConstantData push{};
-		push.color = obj.color;
 		push.transform = projectionView*obj.transform.mat4();
+		push.normalMatrix = obj.transform.normalMatrix();
 
 		vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstantData), &push);
 

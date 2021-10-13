@@ -16,39 +16,25 @@ struct TransformComponent {
 	glm::vec3 scale{1.f, 1.f, 1.f};
 	glm::quat rotation{};
 
-	void setEuler(glm::vec3 angles) {
-		rotation *= glm::quat_cast(glm::orientate3(glm::vec3{angles.z, angles.x, angles.y}));
-	}
+	void setEuler(glm::vec3 angles);
 
-	void rotateGlobalX(float angle) { rotation = glm::normalize(glm::angleAxis(angle, glm::vec3{1.f, 0.f, 0.f})*rotation); }
-	void rotateGlobalY(float angle) { rotation = glm::normalize(glm::angleAxis(angle, glm::vec3{0.f, -1.f, 0.f})*rotation); }
-	void rotateGlobalZ(float angle) { rotation = glm::normalize(glm::angleAxis(angle, glm::vec3{0.f, 0.f, 1.f})*rotation); }
+	void rotateGlobalX(float angle);
+	void rotateGlobalY(float angle);
+	void rotateGlobalZ(float angle);
 
-	void rotateLocalX(float angle) { rotation = glm::normalize(rotation*glm::angleAxis(angle, glm::vec3{1.f, 0.f, 0.f})); }
-	void rotateLocalY(float angle) { rotation = glm::normalize(rotation*glm::angleAxis(angle, glm::vec3{0.f, -1.f, 0.f})); }
-	void rotateLocalZ(float angle) { rotation = glm::normalize(rotation*glm::angleAxis(angle, glm::vec3{0.f, 0.f, 1.f})); }
+	void rotateLocalX(float angle);
+	void rotateLocalY(float angle);
+	void rotateLocalZ(float angle);
 
-	void eulerRotateGlobal(glm::vec3 angles) {
-		glm::quat quatX = glm::angleAxis(angles.x, glm::vec3{1.f, 0.f, 0.f});
-		glm::quat quatY = glm::angleAxis(angles.y, glm::vec3{0.f, -1.f, 0.f});
-		glm::quat quatZ = glm::angleAxis(angles.z, glm::vec3{0.f, 0.f, 1.f});
-		rotation = glm::normalize(quatX*quatY*quatZ*rotation);
-	}
+	void eulerRotateGlobal(glm::vec3 angles);
+	void eulerRotateLocal(glm::vec3 angles);
 
-	void eulerRotateLocal(glm::vec3 angles) {
-		glm::quat quatX = glm::angleAxis(angles.x, glm::vec3{1.f, 0.f, 0.f});
-		glm::quat quatY = glm::angleAxis(angles.y, glm::vec3{0.f, -1.f, 0.f});
-		glm::quat quatZ = glm::angleAxis(angles.z, glm::vec3{0.f, 0.f, 1.f});
-		rotation = glm::normalize(rotation*quatX*quatY*quatZ);
-	}
+	float yaw();
+	float pitch();
+	float roll();
 
-	float yaw() { return glm::yaw(glm::normalize(rotation)); }
-	float pitch() { return glm::pitch(glm::normalize(rotation)); }
-	float roll() { return glm::roll(glm::normalize(rotation)); }
-
-	glm::mat4 mat4() {
-		return glm::translate(glm::mat4{1.f}, translation) * glm::mat4_cast(rotation) * glm::scale(glm::mat4{1.f}, scale);
-	}
+	glm::mat4 mat4();
+	glm::mat3 normalMatrix();
 };
 
 class ObtGameObject {
