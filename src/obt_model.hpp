@@ -2,6 +2,8 @@
 
 #include "obt_device.hpp"
 
+#include "obt_buffer.hpp"
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -51,13 +53,11 @@ class ObtModel {
 
 		ObtDevice& obtDevice;
 
-		VkBuffer vertexBuffer;
-		VkDeviceMemory vertexBufferMemory;
+		std::unique_ptr<ObtBuffer> vertexBuffer;
 		uint32_t vertexCount;
 
 		bool hasIndexBuffer = false;
-		VkBuffer indexBuffer;
-		VkDeviceMemory indexBufferMemory;
+		std::unique_ptr<ObtBuffer> indexBuffer;
 		uint32_t indexCount;
 };
 

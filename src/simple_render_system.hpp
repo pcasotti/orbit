@@ -4,6 +4,7 @@
 #include "obt_device.hpp"
 #include "obt_game_object.hpp"
 #include "obt_camera.hpp"
+#include "obt_frame_info.hpp"
 
 #include <memory>
 #include <vector>
@@ -18,7 +19,7 @@ class SimpleRenderSystem {
 		SimpleRenderSystem(const SimpleRenderSystem&) = delete;
 		SimpleRenderSystem &operator=(const SimpleRenderSystem&) = delete;
 
-		void renderGameObjects(VkCommandBuffer commandBuffer, std::vector<ObtGameObject>& gameObjects, const ObtCamera& camera);
+		void renderGameObjects(FrameInfo& frameInfo, std::vector<ObtGameObject>& gameObjects);
 
 	private:
 		void createPipelineLayout();
