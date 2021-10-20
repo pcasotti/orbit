@@ -22,6 +22,11 @@ struct GlobalUbo {
 };
 
 App::App() {
+	globalPool = ObtDescriptorPool::Builder(obtDevice)
+		.setMaxSets(ObtSwapChain::MAX_FRAMES_IN_FLIGHT)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, ObtSwapChain::MAX_FRAMES_IN_FLIGHT)
+		.build();
+
 	loadGameObjects();
 }
 
@@ -34,7 +39,19 @@ void App::run() {
 		globalUboBuffers[i]->map();
 	}
 
-	SimpleRenderSystem simpleRenderSystem{obtDevice, obtRenderer.getSwapChainRenderPass()};
+	auto globalSetLayout = ObtDescriptorSetLayout::Builder(obtDevice)
+		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.build();
+
+	std::vector<VkDescriptorSet> globalDescriptorSets(ObtSwapChain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < globalDescriptorSets.size(); i++) {
+		auto bufferInfo = globalUboBuffers[i]->descriptorInfo();
+		ObtDescriptorWriter(*globalSetLayout, *globalPool)
+			.writeBuffer(0, &bufferInfo)
+			.build(globalDescriptorSets[i]);
+	}
+
+	SimpleRenderSystem simpleRenderSystem{obtDevice, obtRenderer.getSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout()};
 	ObtCamera camera{};
 	camera.setViewTarget(glm::vec3{-1.f, -2.f, -2.f}, glm::vec3{0.f, 0.f, 2.5f});
 
@@ -57,7 +74,7 @@ void App::run() {
 
 		if (auto commandBuffer = obtRenderer.beginFrame()) {
 			int frameIndex = obtRenderer.getFrameIndex();
-			FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera};
+			FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex]};
 
 			GlobalUbo ubo{};
 			ubo.projView = camera.getProjection()*camera.getView();
@@ -80,7 +97,7 @@ void App::loadGameObjects() {
 	auto gameObject = ObtGameObject::createGameObject();
 	gameObject.model = obtModel;
 	gameObject.transform.translation = {0.f, 0.f, 2.5f};
-	gameObject.transform.scale = glm::vec3{2.f, .5f, 2.f};
+	gameObject.transform.scale = glm::vec3{2.f, 1.f, 2.f};
 	gameObjects.push_back(std::move(gameObject));
 }
 

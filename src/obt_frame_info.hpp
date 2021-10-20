@@ -11,6 +11,7 @@ struct FrameInfo {
 	float frameTime;
 	VkCommandBuffer commandBuffer;
 	ObtCamera& camera;
+	VkDescriptorSet globalDescriptorSet;
 };
 
 }

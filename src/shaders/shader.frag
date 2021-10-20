@@ -3,7 +3,7 @@
 layout(location = 0) in vec3 fragColor;
 
 layout(push_constant) uniform Push {
-	mat4 transform;
+	mat4 modelMatrix;
 	mat4 normalMatrix;
 } push;
 
