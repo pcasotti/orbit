@@ -17,16 +17,16 @@ void KeyboardController::moveXZ(GLFWwindow* window, ObtGameObject& gameObject, f
 	}
 
 	// https://stackoverflow.com/questions/21515341/rotate-a-unit-vector-by-a-given-quaternion
-	const glm::vec3 forward = glm::vec3{
+	const glm::vec3 forward = glm::normalize(glm::vec3{
 		2*(gameObject.transform.rotation.x*gameObject.transform.rotation.z + gameObject.transform.rotation.y*gameObject.transform.rotation.w),
 		2*(gameObject.transform.rotation.y*gameObject.transform.rotation.z - gameObject.transform.rotation.x*gameObject.transform.rotation.w),
 		1 - 2*(gameObject.transform.rotation.x*gameObject.transform.rotation.x + gameObject.transform.rotation.y*gameObject.transform.rotation.y),
-	};
-	const glm::vec3 right = glm::vec3{
+	});
+	const glm::vec3 right = glm::normalize(glm::vec3{
 		-1 + 2*(gameObject.transform.rotation.y*gameObject.transform.rotation.y + gameObject.transform.rotation.z*gameObject.transform.rotation.z),
 		-2*(gameObject.transform.rotation.x*gameObject.transform.rotation.y + gameObject.transform.rotation.z*gameObject.transform.rotation.w),
 		-2*(gameObject.transform.rotation.x*gameObject.transform.rotation.z - gameObject.transform.rotation.y*gameObject.transform.rotation.w),
-	};
+	});
 	const glm::vec3 up{0.f, -1.f, 0.f};
 
 	glm::vec3 moveDir{0.f};
