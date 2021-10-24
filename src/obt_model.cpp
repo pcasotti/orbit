@@ -70,11 +70,11 @@ void ObtModel::createIndexBuffers(const std::vector<uint32_t>& indices) {
 	obtDevice.copyBuffer(stagingBuffer.getBuffer(), indexBuffer->getBuffer(), bufferSize);
 }
 
-void ObtModel::draw(VkCommandBuffer commandBuffer) {
+void ObtModel::draw(VkCommandBuffer commandBuffer, uint32_t instance) {
 	if (hasIndexBuffer) {
-		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, instance);
 	} else {
-		vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+		vkCmdDraw(commandBuffer, vertexCount, 1, 0, instance);
 	}
 }
 

@@ -1,11 +1,6 @@
-#version 450
+#version 460
 
 layout(location = 0) in vec3 fragColor;
-
-layout(push_constant) uniform Push {
-	mat4 modelMatrix;
-	mat4 normalMatrix;
-} push;
 
 layout(set = 0, binding = 1) uniform SceneUbo {
 	float ambient;

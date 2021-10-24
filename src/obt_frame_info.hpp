@@ -3,6 +3,7 @@
 #include "obt_camera.hpp"
 
 #include <vulkan/vulkan.h>
+#include <vector>
 
 namespace obt {
 
@@ -11,7 +12,7 @@ struct FrameInfo {
 	float frameTime;
 	VkCommandBuffer commandBuffer;
 	ObtCamera& camera;
-	VkDescriptorSet globalDescriptorSet;
+	std::vector<VkDescriptorSet>& descriptorSets;
 	uint32_t dynamicOffsets;
 };
 

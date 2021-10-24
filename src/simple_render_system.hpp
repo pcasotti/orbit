@@ -13,7 +13,7 @@ namespace obt {
 
 class SimpleRenderSystem {
 	public:
-		SimpleRenderSystem(ObtDevice& device, VkRenderPass renderPass, VkDescriptorSetLayout globalSetLayout);
+		SimpleRenderSystem(ObtDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
 		~SimpleRenderSystem();
 
 		SimpleRenderSystem(const SimpleRenderSystem&) = delete;
@@ -22,7 +22,7 @@ class SimpleRenderSystem {
 		void renderGameObjects(FrameInfo& frameInfo, std::vector<ObtGameObject>& gameObjects);
 
 	private:
-		void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+		void createPipelineLayout(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
 		void createPipeline(VkRenderPass renderPass);
 
 		ObtDevice& obtDevice;

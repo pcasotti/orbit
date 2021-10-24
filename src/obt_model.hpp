@@ -45,7 +45,7 @@ class ObtModel {
 		static std::unique_ptr<ObtModel> createModelFromFile(ObtDevice& device, const std::string& filePath);
 
 		void bind(VkCommandBuffer commandBuffer);
-		void draw(VkCommandBuffer commandBuffer);
+		void draw(VkCommandBuffer commandBuffer, uint32_t instance = 0);
 
 	private:
 		void createVertexBuffers(const std::vector<Vertex>& vertices);
