@@ -12,6 +12,7 @@ struct FrameInfo {
 	VkCommandBuffer commandBuffer;
 	ObtCamera& camera;
 	VkDescriptorSet globalDescriptorSet;
+	uint32_t dynamicOffsets;
 };
 
 }

@@ -13,18 +13,26 @@
 #include <stdexcept>
 #include <array>
 #include <chrono>
+#include <numeric>
 
 namespace obt {
 
-struct GlobalUbo {
+struct CameraUbo {
+	glm::mat4 proj{1.f};
+	glm::mat4 view{1.f};
 	glm::mat4 projView{1.f};
-	glm::vec3 lightDir = glm::normalize(glm::vec3{1.f, -3.f, -1.f});
+};
+
+struct SceneUbo {
+	float ambient = .04f;
+	alignas(16) glm::vec3 lightDir{1.f, -3.f, -1.f};
 };
 
 App::App() {
 	globalPool = ObtDescriptorPool::Builder(obtDevice)
 		.setMaxSets(ObtSwapChain::MAX_FRAMES_IN_FLIGHT)
-		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, ObtSwapChain::MAX_FRAMES_IN_FLIGHT)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, ObtSwapChain::MAX_FRAMES_IN_FLIGHT * 10)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, ObtSwapChain::MAX_FRAMES_IN_FLIGHT * 10)
 		.build();
 
 	loadGameObjects();
@@ -33,21 +41,31 @@ App::App() {
 App::~App() {}
 
 void App::run() {
-	std::vector<std::unique_ptr<ObtBuffer>> globalUboBuffers(ObtSwapChain::MAX_FRAMES_IN_FLIGHT);
-	for (int i = 0; i < globalUboBuffers.size(); i++) {
-		globalUboBuffers[i] = std::make_unique<ObtBuffer>(obtDevice, sizeof(GlobalUbo), 1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-		globalUboBuffers[i]->map();
+	auto minOffsetAlignment = std::lcm(
+		obtDevice.properties.limits.minUniformBufferOffsetAlignment,
+		obtDevice.properties.limits.nonCoherentAtomSize);
+
+	std::vector<std::unique_ptr<ObtBuffer>> cameraUboBuffers(ObtSwapChain::MAX_FRAMES_IN_FLIGHT);
+	for (int i = 0; i < cameraUboBuffers.size(); i++) {
+		cameraUboBuffers[i] = std::make_unique<ObtBuffer>(obtDevice, sizeof(CameraUbo), 1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		cameraUboBuffers[i]->map();
 	}
+	std::unique_ptr<ObtBuffer> sceneUboBuffer = std::make_unique<ObtBuffer>(
+		obtDevice, sizeof(SceneUbo), ObtSwapChain::MAX_FRAMES_IN_FLIGHT, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, minOffsetAlignment);
+	sceneUboBuffer->map();
 
 	auto globalSetLayout = ObtDescriptorSetLayout::Builder(obtDevice)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
+		.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
 	std::vector<VkDescriptorSet> globalDescriptorSets(ObtSwapChain::MAX_FRAMES_IN_FLIGHT);
 	for (int i = 0; i < globalDescriptorSets.size(); i++) {
-		auto bufferInfo = globalUboBuffers[i]->descriptorInfo();
+		auto cameraInfo = cameraUboBuffers[i]->descriptorInfo();
+		auto sceneInfo = sceneUboBuffer->descriptorInfo(sizeof(SceneUbo), 0);
 		ObtDescriptorWriter(*globalSetLayout, *globalPool)
-			.writeBuffer(0, &bufferInfo)
+			.writeBuffer(0, &cameraInfo)
+			.writeBuffer(1, &sceneInfo)
 			.build(globalDescriptorSets[i]);
 	}
 
@@ -74,12 +92,19 @@ void App::run() {
 
 		if (auto commandBuffer = obtRenderer.beginFrame()) {
 			int frameIndex = obtRenderer.getFrameIndex();
-			FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex]};
+			uint32_t dynamicOffsets = sceneUboBuffer->getAlignmentSize()*frameIndex;
+			FrameInfo frameInfo{frameIndex, frameTime, commandBuffer, camera, globalDescriptorSets[frameIndex], dynamicOffsets};
 
-			GlobalUbo ubo{};
-			ubo.projView = camera.getProjection()*camera.getView();
-			globalUboBuffers[frameIndex]->writeToBuffer(&ubo);
-			globalUboBuffers[frameIndex]->flush();
+			CameraUbo camUbo{};
+			camUbo.proj = camera.getProjection();
+			camUbo.view = camera.getView();
+			camUbo.projView = camUbo.proj*camUbo.view;
+			cameraUboBuffers[frameIndex]->writeToBuffer(&camUbo);
+			cameraUboBuffers[frameIndex]->flush();
+
+			SceneUbo sceneUbo{};
+			sceneUboBuffer->writeToIndex(&sceneUbo, frameIndex);
+			sceneUboBuffer->flushIndex(frameIndex);
 
 			obtRenderer.beginSwapChainRenderPass(commandBuffer);
 			simpleRenderSystem.renderGameObjects(frameInfo, gameObjects);

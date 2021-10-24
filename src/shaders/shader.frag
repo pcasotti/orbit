@@ -7,6 +7,11 @@ layout(push_constant) uniform Push {
 	mat4 normalMatrix;
 } push;
 
+layout(set = 0, binding = 1) uniform SceneUbo {
+	float ambient;
+	vec3 lightDir;
+} sceneUbo;
+
 layout (location = 0) out vec4 outColor;
 
 void main() {

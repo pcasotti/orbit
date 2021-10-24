@@ -58,7 +58,7 @@ std::unique_ptr<ObtDescriptorPool> ObtDescriptorPool::Builder::build() const {
 	return std::make_unique<ObtDescriptorPool>(obtDevice, maxSets, poolFlags, poolSizes);
 }
 
-ObtDescriptorPool::ObtDescriptorPool(ObtDevice& obtDevice, uint32_t maxSets, VkDescriptorPoolCreateFlags poolFlags, const std::vector<VkDescriptorPoolSize> &poolSizes) : obtDevice{obtDevice} {
+ObtDescriptorPool::ObtDescriptorPool(ObtDevice& obtDevice, uint32_t maxSets, VkDescriptorPoolCreateFlags poolFlags, const std::vector<VkDescriptorPoolSize>& poolSizes) : obtDevice{obtDevice} {
 	VkDescriptorPoolCreateInfo descriptorPoolInfo{};
 	descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	descriptorPoolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -75,7 +75,7 @@ ObtDescriptorPool::~ObtDescriptorPool() {
 	vkDestroyDescriptorPool(obtDevice.device(), descriptorPool, nullptr);
 }
 
-bool ObtDescriptorPool::allocateDescriptor(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet &descriptor) const {
+bool ObtDescriptorPool::allocateDescriptor(const VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet& descriptor) const {
 	VkDescriptorSetAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 	allocInfo.descriptorPool = descriptorPool;
@@ -99,7 +99,7 @@ void ObtDescriptorPool::resetPool() {
 
 ObtDescriptorWriter::ObtDescriptorWriter(ObtDescriptorSetLayout& setLayout, ObtDescriptorPool &pool) : setLayout{setLayout}, pool{pool} {}
 
-ObtDescriptorWriter& ObtDescriptorWriter::writeBuffer(uint32_t binding, VkDescriptorBufferInfo *bufferInfo) {
+ObtDescriptorWriter& ObtDescriptorWriter::writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo) {
 	assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
 	auto& bindingDescription = setLayout.bindings[binding];
@@ -117,7 +117,7 @@ ObtDescriptorWriter& ObtDescriptorWriter::writeBuffer(uint32_t binding, VkDescri
 	return *this;
 }
 
-ObtDescriptorWriter& ObtDescriptorWriter::writeImage(uint32_t binding, VkDescriptorImageInfo *imageInfo) {
+ObtDescriptorWriter& ObtDescriptorWriter::writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo) {
 	assert(setLayout.bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
 	auto &bindingDescription = setLayout.bindings[binding];
