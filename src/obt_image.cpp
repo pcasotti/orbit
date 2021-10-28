@@ -63,7 +63,7 @@ void ObtImage::createImageFromFile(const std::string& filePath) {
 	VkImageCreateInfo imageInfo{};
 	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.extent.width = static_cast<uint32_t>(texHeight);
+	imageInfo.extent.width = static_cast<uint32_t>(texWidth);
 	imageInfo.extent.height = static_cast<uint32_t>(texHeight);
 	imageInfo.extent.depth = 1;
 	imageInfo.mipLevels = 1;
