@@ -4,6 +4,7 @@
 #include "obt_camera.hpp"
 #include "keyboard_controller.hpp"
 #include "obt_buffer.hpp"
+#include "obt_image.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -35,10 +36,11 @@ struct ObjectSbo {
 
 App::App() {
 	globalPool = ObtDescriptorPool::Builder(obtDevice)
-		.setMaxSets(ObtSwapChain::MAX_FRAMES_IN_FLIGHT * 10 * 3)
+		.setMaxSets(ObtSwapChain::MAX_FRAMES_IN_FLIGHT * 10 * 4)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, ObtSwapChain::MAX_FRAMES_IN_FLIGHT * 10)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, ObtSwapChain::MAX_FRAMES_IN_FLIGHT * 10)
 		.addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, ObtSwapChain::MAX_FRAMES_IN_FLIGHT * 10)
+		.addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, ObtSwapChain::MAX_FRAMES_IN_FLIGHT * 10)
 		.build();
 
 	loadGameObjects();
@@ -47,6 +49,9 @@ App::App() {
 App::~App() {}
 
 void App::run() {
+	std::unique_ptr<ObtSampler> sampler = std::make_unique<ObtSampler>(obtDevice);
+	std::unique_ptr<ObtImage> texture = std::make_unique<ObtImage>(obtDevice, "res/textures/texture.png");
+
 	auto minOffsetAlignment = std::lcm(
 		obtDevice.properties.limits.minUniformBufferOffsetAlignment,
 		obtDevice.properties.limits.nonCoherentAtomSize);
@@ -67,6 +72,7 @@ void App::run() {
 	auto globalSetLayout = ObtDescriptorSetLayout::Builder(obtDevice)
 		.addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
 		.addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+		.addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
 		.build();
 
 	auto objectSetLayout = ObtDescriptorSetLayout::Builder(obtDevice)
@@ -78,9 +84,11 @@ void App::run() {
 	for (int i = 0; i < globalDescriptorSets.size(); i++) {
 		auto cameraInfo = cameraUboBuffers[i]->descriptorInfo();
 		auto sceneInfo = sceneUboBuffer->descriptorInfo(sizeof(SceneUbo), 0);
+		auto imageInfo = texture->descriptorInfo(sampler->getSampler());
 		ObtDescriptorWriter(*globalSetLayout, *globalPool)
 			.writeBuffer(0, &cameraInfo)
 			.writeBuffer(1, &sceneInfo)
+			.writeImage(2, &imageInfo)
 			.build(globalDescriptorSets[i]);
 
 		auto objectInfo = objectSboBuffers[i]->descriptorInfo(sizeof(ObjectSbo)*10000, 0);
@@ -151,7 +159,7 @@ void App::loadGameObjects() {
 	auto gameObject = ObtGameObject::createGameObject();
 	gameObject.model = obtModel;
 	gameObject.transform.translation = {0.f, 0.f, 2.5f};
-	gameObject.transform.scale = glm::vec3{2.f, 1.f, 2.f};
+	gameObject.transform.rotateLocalY(-glm::half_pi<float>());
 	gameObjects.push_back(std::move(gameObject));
 }
 

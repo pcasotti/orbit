@@ -1,7 +1,6 @@
 #pragma once
 
 #include "obt_device.hpp"
-
 #include "obt_buffer.hpp"
 
 #define GLM_FORCE_RADIANS

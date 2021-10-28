@@ -26,6 +26,7 @@ layout(std140, set = 1, binding = 0) readonly buffer ObjectSbo {
 } objectSbo;
 
 layout(location = 0) out vec3 fragColor;
+layout(location = 1) out vec2 texCoord;
 
 const vec3 LIGHT_DIR = vec3(1.0, -3.0, -1.0);
 const float AMBIENT = 0.02;
@@ -41,4 +42,5 @@ void main() {
 	float lightIntensity = sceneUbo.ambient + max(dot(worldNormal, sceneUbo.lightDir), 0);
 
 	fragColor = color * lightIntensity;
+	texCoord = uv;
 }
