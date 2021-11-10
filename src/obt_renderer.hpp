@@ -35,6 +35,8 @@ class ObtRenderer {
 
 		VkCommandBuffer beginFrame();
 		void endFrame();
+		void beginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, std::vector<VkClearValue>& clearValues);
+		void endRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass);
 		void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
 		void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
 

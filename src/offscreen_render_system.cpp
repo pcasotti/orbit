@@ -1,4 +1,4 @@
-#include "simple_render_system.hpp"
+#include "offscreen_render_system.hpp"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -10,16 +10,16 @@
 
 namespace obt {
 
-SimpleRenderSystem::SimpleRenderSystem(ObtDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) : obtDevice{device} {
+OffscreenRenderSystem::OffscreenRenderSystem(ObtDevice& device, VkRenderPass renderPass, std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) : obtDevice{device} {
 	createPipelineLayout(descriptorSetLayouts);
 	createPipeline(renderPass);
 }
 
-SimpleRenderSystem::~SimpleRenderSystem() {
+OffscreenRenderSystem::~OffscreenRenderSystem() {
 	vkDestroyPipelineLayout(obtDevice.device(), pipelineLayout, nullptr);
 }
 
-void SimpleRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
+void OffscreenRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
@@ -32,7 +32,7 @@ void SimpleRenderSystem::createPipelineLayout(std::vector<VkDescriptorSetLayout>
 	}
 }
 
-void SimpleRenderSystem::createPipeline(VkRenderPass renderPass) {
+void OffscreenRenderSystem::createPipeline(VkRenderPass renderPass) {
 	assert(pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout!");
 
 	PipelineConfigInfo pipelineConfig{};
@@ -40,10 +40,10 @@ void SimpleRenderSystem::createPipeline(VkRenderPass renderPass) {
 	pipelineConfig.rasterizationInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 	pipelineConfig.renderPass = renderPass;
 	pipelineConfig.pipelineLayout = pipelineLayout;
-	obtPipeline = std::make_unique<ObtPipeline>(obtDevice, "res/shaders/screen.vert.spv", "res/shaders/screen.frag.spv", pipelineConfig);
+	obtPipeline = std::make_unique<ObtPipeline>(obtDevice, "res/shaders/shader.vert.spv", "res/shaders/shader.frag.spv", pipelineConfig);
 }
 
-void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo, std::vector<ObtGameObject>& gameObjects) {
+void OffscreenRenderSystem::renderGameObjects(FrameInfo& frameInfo, std::vector<ObtGameObject>& gameObjects) {
 	obtPipeline->bind(frameInfo.commandBuffer);
 
 	vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &frameInfo.descriptorSets[0], 1, &frameInfo.dynamicOffsets);

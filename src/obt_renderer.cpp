@@ -101,21 +101,25 @@ void ObtRenderer::endFrame() {
 	currentFrameIndex = (currentFrameIndex+1)%ObtSwapChain::MAX_FRAMES_IN_FLIGHT;
 }
 
-void ObtRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+void ObtRenderer::beginRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass, VkFramebuffer frameBuffer, VkExtent2D extent, std::vector<VkClearValue>& clearValues) {
 	assert(isFrameStarted && "Cannot call beginSwapChainRenderPass while frame is not in progress!");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot begin render pass on a command buffer from a different frame!");
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = obtSwapChain->getRenderPass();
-	renderPassInfo.framebuffer = obtSwapChain->getFrameBuffer(currentImageIndex);
+	renderPassInfo.renderPass = renderPass;
+	renderPassInfo.framebuffer = frameBuffer;
 
 	renderPassInfo.renderArea.offset = {0, 0};
-	renderPassInfo.renderArea.extent = obtSwapChain->getSwapChainExtent();
+	renderPassInfo.renderArea.extent = extent;
 
+	/*
 	std::array<VkClearValue, 2> clearValues{};
 	clearValues[0].color = {.01f, .01f, .01f, 1.f};
 	clearValues[1].depthStencil = {1.f, 0};
+	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+	renderPassInfo.pClearValues = clearValues.data();
+	*/
 	renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 	renderPassInfo.pClearValues = clearValues.data();
 
@@ -124,20 +128,31 @@ void ObtRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
 	VkViewport viewport{};
 	viewport.x = 0.f;
 	viewport.y = 0.f;
-	viewport.width = static_cast<float>(obtSwapChain->getSwapChainExtent().width);
-	viewport.height = static_cast<float>(obtSwapChain->getSwapChainExtent().height);
+	viewport.width = extent.width;
+	viewport.height = extent.height;
 	viewport.minDepth = 0.f;
 	viewport.maxDepth = 1.f;
-	VkRect2D scissor{{0, 0}, obtSwapChain->getSwapChainExtent()};
+	VkRect2D scissor{{0, 0}, extent};
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void ObtRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+void ObtRenderer::endRenderPass(VkCommandBuffer commandBuffer, VkRenderPass renderPass) {
 	assert(isFrameStarted && "Cannot call endSwapChainRenderPass while frame is not in progress!");
 	assert(commandBuffer == getCurrentCommandBuffer() && "Cannot end render pass on a command buffer from a different frame!");
 
 	vkCmdEndRenderPass(commandBuffer);
+}
+
+void ObtRenderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+	std::vector<VkClearValue> clearValues{2};
+	clearValues[0].color = {.01f, .01f, .01f, 1.f};
+	clearValues[1].depthStencil = {1.f, 0};
+	beginRenderPass(commandBuffer, obtSwapChain->getRenderPass(), obtSwapChain->getFrameBuffer(currentImageIndex), obtSwapChain->getSwapChainExtent(), clearValues);
+}
+
+void ObtRenderer::endSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+	endRenderPass(commandBuffer, obtSwapChain->getRenderPass());
 }
 
 }

@@ -35,8 +35,13 @@ ObtSampler::~ObtSampler() {
 	vkDestroySampler(obtDevice.device(), imageSampler, nullptr);
 }
 
-ObtImage::ObtImage(ObtDevice& obtDevice, const std::string& filePath, VkFormat imageFormat) : obtDevice{obtDevice}, imageFormat{imageFormat} {
-	createImageFromFile(filePath);
+ObtImage::ObtImage(ObtDevice& obtDevice, uint32_t width, uint32_t height, VkImageUsageFlags usage, VkFormat imageFormat, VkImageAspectFlags aspectMask) : obtDevice{obtDevice}, imageFormat{imageFormat} {
+	createImage(width, height, usage);
+	createImageView(aspectMask);
+}
+
+ObtImage::ObtImage(ObtDevice& obtDevice, const std::string& filePath, VkImageUsageFlags usage, VkFormat imageFormat) : obtDevice{obtDevice}, imageFormat{imageFormat} {
+	createImageFromFile(filePath, usage);
 	createImageView();
 }
 
@@ -46,7 +51,27 @@ ObtImage::~ObtImage() {
 	vkFreeMemory(obtDevice.device(), textureImageMemory, nullptr);
 }
 
-void ObtImage::createImageFromFile(const std::string& filePath) {
+void ObtImage::createImage(uint32_t width, uint32_t height, VkImageUsageFlags usage) {
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = width;
+	imageInfo.extent.height = height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = 1;
+	imageInfo.arrayLayers = 1;
+	imageInfo.format = imageFormat;
+	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = usage;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageInfo.flags = 0;
+
+	obtDevice.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+}
+
+void ObtImage::createImageFromFile(const std::string& filePath, VkImageUsageFlags usage) {
 	int texWidth, texHeight, texChannels;
 	stbi_uc* pixels = stbi_load(filePath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	VkDeviceSize imageSize = texWidth*texHeight*4;
@@ -60,23 +85,7 @@ void ObtImage::createImageFromFile(const std::string& filePath) {
 
 	stbi_image_free(pixels);
 
-	VkImageCreateInfo imageInfo{};
-	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-	imageInfo.imageType = VK_IMAGE_TYPE_2D;
-	imageInfo.extent.width = static_cast<uint32_t>(texWidth);
-	imageInfo.extent.height = static_cast<uint32_t>(texHeight);
-	imageInfo.extent.depth = 1;
-	imageInfo.mipLevels = 1;
-	imageInfo.arrayLayers = 1;
-	imageInfo.format = imageFormat;
-	imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-	imageInfo.flags = 0;
-
-	obtDevice.createImageWithInfo(imageInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+	createImage(static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), usage);
 	transitionImageLayout(imageFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 	obtDevice.copyBufferToImage(stagingBuffer.getBuffer(), textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight), 1);
 	transitionImageLayout(imageFormat, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -118,13 +127,13 @@ void ObtImage::transitionImageLayout(VkFormat format, VkImageLayout oldLayout, V
 	obtDevice.endSingleTimeCommands(commandBuffer);
 }
 
-void ObtImage::createImageView() {
+void ObtImage::createImageView(VkImageAspectFlags aspectMask) {
 	VkImageViewCreateInfo viewInfo{};
 	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	viewInfo.image = textureImage;
 	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	viewInfo.format = imageFormat;
-	viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	viewInfo.subresourceRange.aspectMask = aspectMask;
 	viewInfo.subresourceRange.baseMipLevel = 0;
 	viewInfo.subresourceRange.levelCount = 1;
 	viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -135,8 +144,8 @@ void ObtImage::createImageView() {
 	}
 }
 
-VkDescriptorImageInfo ObtImage::descriptorInfo(VkSampler sampler) {
-	return VkDescriptorImageInfo{sampler, imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+VkDescriptorImageInfo ObtImage::descriptorInfo(VkSampler sampler, VkImageLayout imageLayout) {
+	return VkDescriptorImageInfo{sampler, imageView, imageLayout};
 }
 
 }

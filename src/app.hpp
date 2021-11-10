@@ -5,6 +5,7 @@
 #include "obt_game_object.hpp"
 #include "obt_renderer.hpp"
 #include "obt_descriptors.hpp"
+#include "obt_image.hpp"
 
 #include <memory>
 #include <vector>
@@ -15,6 +16,7 @@ class App {
 	public:
 		static constexpr int WIDTH = 800;
 		static constexpr int HEIGHT = 600;
+		static constexpr int OFFSCREEN_SIZE = 1024;
 
 		App();
 		~App();
@@ -26,6 +28,7 @@ class App {
 
 	private:
 		void loadGameObjects();
+		void prepareOffscreen();
 
 		ObtWindow obtWindow{WIDTH, HEIGHT, "Orbit"};
 		ObtDevice obtDevice{obtWindow};
@@ -33,6 +36,12 @@ class App {
 
 		std::unique_ptr<ObtDescriptorPool> globalPool{};
 		std::vector<ObtGameObject> gameObjects;
+
+		std::unique_ptr<ObtImage> color;
+		std::unique_ptr<ObtImage> depth;
+
+		VkRenderPass shadowPass;
+		VkFramebuffer shadowBuffer;
 };
 
 }
