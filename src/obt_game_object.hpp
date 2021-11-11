@@ -14,7 +14,7 @@ namespace obt {
 struct TransformComponent {
 	glm::vec3 translation{};
 	glm::vec3 scale{1.f, 1.f, 1.f};
-	glm::quat rotation{};
+	glm::quat rotation{1.f, 0.f, 0.f, 0.f};
 
 	void setEuler(glm::vec3 angles);
 
