@@ -47,6 +47,7 @@ void SimpleRenderSystem::renderGameObjects(FrameInfo& frameInfo, std::vector<Obt
 
 	vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &frameInfo.descriptorSets[0], 1, &frameInfo.dynamicOffsets);
 	vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1, &frameInfo.descriptorSets[1], 0, nullptr);
+	vkCmdBindDescriptorSets(frameInfo.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 2, 1, &frameInfo.descriptorSets[2], 0, nullptr);
 
 	for (int i = 0; i < gameObjects.size(); i++) {
 		auto& obj = gameObjects[i];

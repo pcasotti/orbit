@@ -33,6 +33,7 @@ class App {
 
 		std::unique_ptr<ObtDescriptorPool> globalPool{};
 		std::vector<ObtGameObject> gameObjects;
+		std::vector<ObtGameObject> pointLights;
 };
 
 }
